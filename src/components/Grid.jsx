@@ -33,7 +33,7 @@ const Grid = ({ buildings, onCellClick, onBuildingClick }) => {
                 onBuildingClick(building);
             }}
         >
-            <Building type={building.type} />
+            <Building type={building.type} level={building.level} status={building.status} />
         </div>
       ))}
     </div>

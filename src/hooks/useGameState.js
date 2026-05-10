@@ -17,7 +17,9 @@ const BUILDING_TYPES = {
     id: 'GOLD_MINE',
     name: 'Gold Mine',
     cost: { gold: 0, elixir: 150 },
-    production: { gold: 3, elixir: 0 },
+    production: [0, 3, 5], // index corresponds to level
+    upgradeCost: { gold: 300, elixir: 0 },
+    upgradeDuration: 5000,
     storage: { gold: 0, elixir: 0 },
     limit: 1,
   },
@@ -25,7 +27,9 @@ const BUILDING_TYPES = {
     id: 'ELIXIR_COLLECTOR',
     name: 'Elixir Collector',
     cost: { gold: 150, elixir: 0 },
-    production: { gold: 0, elixir: 3 },
+    production: [0, 3, 5],
+    upgradeCost: { gold: 300, elixir: 0 },
+    upgradeDuration: 5000,
     storage: { gold: 0, elixir: 0 },
     limit: 1,
   },
@@ -51,7 +55,7 @@ const BUILDING_TYPES = {
 export const useGameState = () => {
   const [resources, setResources] = useState(INITIAL_RESOURCES);
   const [buildings, setBuildings] = useState([
-    { type: 'TOWN_HALL', x: 4, y: 4, id: Date.now() },
+    { type: 'TOWN_HALL', x: 4, y: 4, id: Date.now(), level: 1, status: 'ready' },
   ]);
   const [troops, setTroops] = useState(0);
 
@@ -77,7 +81,7 @@ export const useGameState = () => {
         gold: prev.gold - buildingConfig.cost.gold,
         elixir: prev.elixir - buildingConfig.cost.elixir,
       }));
-      setBuildings(prev => [...prev, { type, x, y, id: Date.now() }]);
+      setBuildings(prev => [...prev, { type, x, y, id: Date.now(), level: 1, status: 'ready' }]);
       return true;
     }
     return false;
@@ -93,6 +97,34 @@ export const useGameState = () => {
     return false;
   }, [resources, troops, troopCapacity]);
 
+  const upgradeBuilding = useCallback((id) => {
+    const building = buildings.find(b => b.id === id);
+    if (!building || building.status === 'upgrading' || building.level >= 2) return false;
+
+    const config = BUILDING_TYPES[building.type];
+    if (!config || !config.upgradeCost) return false;
+
+    if (resources.gold >= config.upgradeCost.gold && resources.elixir >= config.upgradeCost.elixir) {
+      setResources(prev => ({
+        gold: prev.gold - config.upgradeCost.gold,
+        elixir: prev.elixir - config.upgradeCost.elixir,
+      }));
+
+      // Set to upgrading status
+      setBuildings(prev => prev.map(b => b.id === id ? { ...b, status: 'upgrading' } : b));
+
+      // Timer to finish upgrade
+      setTimeout(() => {
+        setBuildings(prev => prev.map(b =>
+            b.id === id ? { ...b, level: b.level + 1, status: 'ready' } : b
+        ));
+      }, config.upgradeDuration);
+
+      return true;
+    }
+    return false;
+  }, [buildings, resources]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setResources(prev => {
@@ -100,9 +132,17 @@ export const useGameState = () => {
         let elixirGain = 0;
 
         buildings.forEach(b => {
+          if (b.status !== 'ready') return;
+
           const config = BUILDING_TYPES[b.type];
-          goldGain += config.production.gold;
-          elixirGain += config.production.elixir;
+          if (Array.isArray(config.production)) {
+            const prod = config.production[b.level];
+            if (b.type === 'GOLD_MINE') goldGain += prod;
+            if (b.type === 'ELIXIR_COLLECTOR') elixirGain += prod;
+          } else {
+            goldGain += config.production.gold || 0;
+            elixirGain += config.production.elixir || 0;
+          }
         });
 
         return {
@@ -122,6 +162,7 @@ export const useGameState = () => {
     troopCapacity,
     addBuilding,
     trainTroop,
+    upgradeBuilding,
     BUILDING_TYPES,
   };
 };

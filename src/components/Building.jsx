@@ -1,7 +1,7 @@
 import React from 'react';
 import { Home, Pickaxe, Droplets } from 'lucide-react';
 
-const Building = ({ type, x, y }) => {
+const Building = ({ type }) => {
   const getIcon = () => {
     switch (type) {
       case 'TOWN_HALL':
@@ -30,11 +30,7 @@ const Building = ({ type, x, y }) => {
 
   return (
     <div
-      className={`absolute w-full h-full ${getBgColor()} rounded-md flex items-center justify-center shadow-lg border-2 border-black/20`}
-      style={{
-        gridColumnStart: x + 1,
-        gridRowStart: y + 1,
-      }}
+      className={`w-full h-full ${getBgColor()} rounded-md flex items-center justify-center shadow-lg border-2 border-black/20`}
     >
       {getIcon()}
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const INITIAL_RESOURCES = {
   gold: 500,
@@ -29,6 +29,23 @@ const BUILDING_TYPES = {
     storage: { gold: 0, elixir: 0 },
     limit: 1,
   },
+  BARRACKS: {
+    id: 'BARRACKS',
+    name: 'Barracks',
+    cost: { gold: 0, elixir: 500 },
+    production: { gold: 0, elixir: 0 },
+    storage: { gold: 0, elixir: 0 },
+    limit: 1,
+  },
+  ARMY_CAMP: {
+    id: 'ARMY_CAMP',
+    name: 'Army Camp',
+    cost: { gold: 0, elixir: 300 },
+    production: { gold: 0, elixir: 0 },
+    storage: { gold: 0, elixir: 0 },
+    capacity: 20,
+    limit: 1,
+  },
 };
 
 export const useGameState = () => {
@@ -36,6 +53,14 @@ export const useGameState = () => {
   const [buildings, setBuildings] = useState([
     { type: 'TOWN_HALL', x: 4, y: 4, id: Date.now() },
   ]);
+  const [troops, setTroops] = useState(0);
+
+  const troopCapacity = useMemo(() => {
+    return buildings.reduce((acc, b) => {
+      const config = BUILDING_TYPES[b.type];
+      return acc + (config.capacity || 0);
+    }, 0);
+  }, [buildings]);
 
   const addBuilding = useCallback((type, x, y) => {
     const buildingConfig = BUILDING_TYPES[type];
@@ -57,6 +82,16 @@ export const useGameState = () => {
     }
     return false;
   }, [resources, buildings]);
+
+  const trainTroop = useCallback(() => {
+    const troopCost = 25;
+    if (resources.elixir >= troopCost && troops < troopCapacity) {
+      setResources(prev => ({ ...prev, elixir: prev.elixir - troopCost }));
+      setTroops(prev => prev + 1);
+      return true;
+    }
+    return false;
+  }, [resources, troops, troopCapacity]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -83,7 +118,10 @@ export const useGameState = () => {
   return {
     resources,
     buildings,
+    troops,
+    troopCapacity,
     addBuilding,
+    trainTroop,
     BUILDING_TYPES,
   };
 };

@@ -1,7 +1,17 @@
 import React from 'react';
-import { Pickaxe, Droplets, Coins, Droplet } from 'lucide-react';
+import { Pickaxe, Droplets, Coins, Droplet, Shield, Tent } from 'lucide-react';
 
 const Shop = ({ buildingTypes, onSelect, selectedType, buildings }) => {
+  const getIcon = (key) => {
+    switch(key) {
+        case 'GOLD_MINE': return <Pickaxe className="w-6 h-6 text-yellow-400" />;
+        case 'ELIXIR_COLLECTOR': return <Droplets className="w-6 h-6 text-purple-400" />;
+        case 'BARRACKS': return <Shield className="w-6 h-6 text-blue-400" />;
+        case 'ARMY_CAMP': return <Tent className="w-6 h-6 text-orange-400" />;
+        default: return null;
+    }
+  };
+
   return (
     <div className="p-4 bg-slate-800 rounded-xl border-2 border-slate-700 shadow-xl w-64">
       <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Shop</h2>
@@ -27,7 +37,7 @@ const Shop = ({ buildingTypes, onSelect, selectedType, buildings }) => {
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-800 rounded-md">
-                  {key === 'GOLD_MINE' ? <Pickaxe className="w-6 h-6 text-yellow-400" /> : <Droplets className="w-6 h-6 text-purple-400" />}
+                  {getIcon(key)}
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="font-semibold text-white">{config.name}</span>

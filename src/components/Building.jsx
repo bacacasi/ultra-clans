@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Pickaxe, Droplets } from 'lucide-react';
+import { Home, Pickaxe, Droplets, Shield, Tent } from 'lucide-react';
 
 const Building = ({ type }) => {
   const getIcon = () => {
@@ -10,6 +10,10 @@ const Building = ({ type }) => {
         return <Pickaxe className="w-8 h-8 text-yellow-400" />;
       case 'ELIXIR_COLLECTOR':
         return <Droplets className="w-8 h-8 text-purple-400" />;
+      case 'BARRACKS':
+        return <Shield className="w-8 h-8 text-blue-400" />;
+      case 'ARMY_CAMP':
+        return <Tent className="w-8 h-8 text-orange-400" />;
       default:
         return null;
     }
@@ -23,6 +27,10 @@ const Building = ({ type }) => {
         return 'bg-gray-700';
       case 'ELIXIR_COLLECTOR':
         return 'bg-gray-700';
+      case 'BARRACKS':
+        return 'bg-slate-700';
+      case 'ARMY_CAMP':
+        return 'bg-amber-900';
       default:
         return 'bg-blue-500';
     }

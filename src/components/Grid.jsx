@@ -1,7 +1,7 @@
 import React from 'react';
 import Building from './Building';
 
-const Grid = ({ buildings, onCellClick }) => {
+const Grid = ({ buildings, onCellClick, onBuildingClick }) => {
   const gridSize = 10;
   const cells = [];
 
@@ -23,13 +23,17 @@ const Grid = ({ buildings, onCellClick }) => {
       {buildings.map((building) => (
         <div
             key={building.id}
-            className="absolute w-[60px] h-[60px] pointer-events-none"
+            className="absolute w-[60px] h-[60px] cursor-pointer"
             style={{
                 left: building.x * 60,
                 top: building.y * 60,
             }}
+            onClick={(e) => {
+                e.stopPropagation();
+                onBuildingClick(building);
+            }}
         >
-            <Building type={building.type} x={0} y={0} />
+            <Building type={building.type} />
         </div>
       ))}
     </div>

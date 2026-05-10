@@ -18,7 +18,7 @@ const BUILDING_TYPES = {
     name: 'Gold Mine',
     cost: { gold: 0, elixir: 150 },
     production: [0, 3, 5], // index corresponds to level
-    upgradeCost: { gold: 300, elixir: 0 },
+    upgradeCost: { gold: 0, elixir: 300 },
     upgradeDuration: 5000,
     storage: { gold: 0, elixir: 0 },
     limit: 1,

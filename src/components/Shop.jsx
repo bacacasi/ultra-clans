@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pickaxe, Droplets, Coins, Droplet } from 'lucide-react';
 
-const Shop = ({ buildingTypes, onSelect, selectedType }) => {
+const Shop = ({ buildingTypes, onSelect, selectedType, buildings }) => {
   return (
     <div className="p-4 bg-slate-800 rounded-xl border-2 border-slate-700 shadow-xl w-64">
       <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Shop</h2>
@@ -9,37 +9,56 @@ const Shop = ({ buildingTypes, onSelect, selectedType }) => {
         {Object.entries(buildingTypes).map(([key, config]) => {
           if (key === 'TOWN_HALL') return null;
 
+          const existingCount = buildings.filter(b => b.type === key).length;
+          const isLimitReached = config.limit && existingCount >= config.limit;
+
           return (
             <button
               key={key}
+              disabled={isLimitReached}
               onClick={() => onSelect(key)}
               className={`w-full p-3 rounded-lg border-2 transition-all flex flex-col gap-2 ${
-                selectedType === key
-                  ? 'border-blue-500 bg-blue-500/10'
-                  : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
+                isLimitReached
+                  ? 'opacity-50 cursor-not-allowed border-slate-700 bg-slate-800'
+                  : selectedType === key
+                    ? 'border-blue-500 bg-blue-500/10'
+                    : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
               }`}
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-800 rounded-md">
                   {key === 'GOLD_MINE' ? <Pickaxe className="w-6 h-6 text-yellow-400" /> : <Droplets className="w-6 h-6 text-purple-400" />}
                 </div>
-                <span className="font-semibold text-white">{config.name}</span>
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold text-white">{config.name}</span>
+                  {config.limit && (
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                      {existingCount} / {config.limit}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="flex gap-3 text-sm">
-                {config.cost.gold > 0 && (
-                  <div className="flex items-center gap-1 text-yellow-400">
-                    <Coins className="w-3 h-3" />
-                    {config.cost.gold}
-                  </div>
-                )}
-                {config.cost.elixir > 0 && (
-                  <div className="flex items-center gap-1 text-purple-400">
-                    <Droplet className="w-3 h-3" />
-                    {config.cost.elixir}
-                  </div>
-                )}
-              </div>
+              {!isLimitReached ? (
+                <div className="flex gap-3 text-sm">
+                  {config.cost.gold > 0 && (
+                    <div className="flex items-center gap-1 text-yellow-400">
+                      <Coins className="w-3 h-3" />
+                      {config.cost.gold}
+                    </div>
+                  )}
+                  {config.cost.elixir > 0 && (
+                    <div className="flex items-center gap-1 text-purple-400">
+                      <Droplet className="w-3 h-3" />
+                      {config.cost.elixir}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-xs text-red-400 font-bold uppercase italic">
+                  Limit Reached
+                </div>
+              )}
             </button>
           );
         })}

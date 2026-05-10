@@ -17,15 +17,17 @@ const BUILDING_TYPES = {
     id: 'GOLD_MINE',
     name: 'Gold Mine',
     cost: { gold: 0, elixir: 150 },
-    production: { gold: 10, elixir: 0 },
+    production: { gold: 3, elixir: 0 },
     storage: { gold: 0, elixir: 0 },
+    limit: 1,
   },
   ELIXIR_COLLECTOR: {
     id: 'ELIXIR_COLLECTOR',
     name: 'Elixir Collector',
     cost: { gold: 150, elixir: 0 },
-    production: { gold: 0, elixir: 10 },
+    production: { gold: 0, elixir: 3 },
     storage: { gold: 0, elixir: 0 },
+    limit: 1,
   },
 };
 
@@ -39,6 +41,12 @@ export const useGameState = () => {
     const buildingConfig = BUILDING_TYPES[type];
     if (!buildingConfig) return false;
 
+    // Check limit
+    if (buildingConfig.limit) {
+      const existingCount = buildings.filter(b => b.type === type).length;
+      if (existingCount >= buildingConfig.limit) return false;
+    }
+
     if (resources.gold >= buildingConfig.cost.gold && resources.elixir >= buildingConfig.cost.elixir) {
       setResources(prev => ({
         gold: prev.gold - buildingConfig.cost.gold,
@@ -48,7 +56,7 @@ export const useGameState = () => {
       return true;
     }
     return false;
-  }, [resources]);
+  }, [resources, buildings]);
 
   useEffect(() => {
     const interval = setInterval(() => {

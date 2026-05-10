@@ -39,6 +39,7 @@ function App() {
           buildingTypes={BUILDING_TYPES}
           onSelect={setSelectedBuildingType}
           selectedType={selectedBuildingType}
+          buildings={buildings}
         />
       </main>
 

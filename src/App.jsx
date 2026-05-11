@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Grid from './components/Grid';
 import Dashboard from './components/Dashboard';
 import Shop from './components/Shop';
+import { useEffect } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { Shield, Users, ArrowBigUpDash, Coins, Droplet, Swords, Target, Heart, Zap } from 'lucide-react';
 

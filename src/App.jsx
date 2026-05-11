@@ -6,13 +6,26 @@ import { useGameState } from './hooks/useGameState';
 import { Shield, Users, ArrowBigUpDash, Coins, Droplet, Swords, Target, Heart, Zap } from 'lucide-react';
 
 function App() {
-  const { resources, buildings, troops, totalTroops, troopCapacity, buildersUsed, addBuilding, trainTroop, upgradeBuilding, BUILDING_TYPES, TROOP_TYPES } = useGameState();
+  const {
+    mode, resources, buildings, aiBuildings, troops, totalTroops, troopCapacity,
+    buildersUsed, deployedUnits, battleResources, addBuilding, trainTroop,
+    upgradeBuilding, startBattle, endBattle, deployUnit, BUILDING_TYPES, TROOP_TYPES
+  } = useGameState();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState(null);
 
   const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
 
+  const [selectedTroopType, setSelectedTroopType] = useState(null);
+
   const handleCellClick = (x, y) => {
+    if (mode === 'BATTLE') {
+        if (selectedTroopType) {
+            deployUnit(selectedTroopType, x, y);
+        }
+        return;
+    }
+
     if (!selectedBuildingType) {
         setSelectedBuildingId(null);
         return;
@@ -56,13 +69,39 @@ function App() {
         />
       </header>
 
-      <main className="flex gap-8 items-start">
+      <main className="flex gap-8 items-start relative">
         <Grid
-          buildings={buildings}
+          buildings={mode === 'HOME' ? buildings : aiBuildings}
+          deployedUnits={deployedUnits}
           onCellClick={handleCellClick}
-          onBuildingClick={handleBuildingClick}
+          onBuildingClick={mode === 'HOME' ? handleBuildingClick : () => {}}
           buildingConfigs={BUILDING_TYPES}
+          mode={mode}
         />
+
+        {mode === 'BATTLE' && (
+            <div className="absolute -bottom-16 left-0 right-0 flex justify-center gap-4 bg-slate-800/90 p-4 rounded-xl border-2 border-blue-500/50 shadow-2xl z-50">
+                {Object.entries(TROOP_TYPES).map(([type, config]) => (
+                    <button
+                        key={type}
+                        onClick={() => setSelectedTroopType(type)}
+                        className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
+                            selectedTroopType === type ? 'border-yellow-400 bg-yellow-400/10 scale-110' : 'border-slate-600'
+                        } ${troops[type] <= 0 ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                    >
+                        {getTroopIcon(type)}
+                        <span className="text-[10px] font-bold text-white">{config.name} x{troops[type]}</span>
+                    </button>
+                ))}
+                <button
+                    onClick={endBattle}
+                    className="ml-8 px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg uppercase italic tracking-tighter"
+                >
+                    Terminer
+                </button>
+            </div>
+        )}
+
         <div className="flex flex-col gap-4">
             <Shop
                 buildingTypes={BUILDING_TYPES}
@@ -231,6 +270,17 @@ function App() {
             )}
         </div>
       </main>
+
+      {mode === 'HOME' && (
+          <button
+              onClick={startBattle}
+              disabled={totalTroops === 0}
+              className="fixed bottom-8 right-8 px-8 py-4 bg-orange-600 hover:bg-orange-500 disabled:bg-slate-700 disabled:opacity-50 text-white font-black text-2xl rounded-2xl shadow-2xl border-b-4 border-orange-800 flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 uppercase italic"
+          >
+              <Swords className="w-8 h-8" />
+              Attaquer
+          </button>
+      )}
 
       <footer className="text-slate-500 text-sm mt-auto max-w-2xl text-center">
         Build mines and collectors for resources. <br/>

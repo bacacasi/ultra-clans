@@ -1,7 +1,7 @@
 import React from 'react';
 import { Home, Pickaxe, Droplets, Shield, Tent, Hammer, Crosshair } from 'lucide-react';
 
-const Building = ({ type, level, status, duration }) => {
+const Building = ({ type, level, status, duration, hp, maxHp }) => {
   const getIcon = () => {
     if (status === 'upgrading' || status === 'constructing') {
         return <Hammer className="w-8 h-8 text-white animate-bounce" />;
@@ -56,6 +56,15 @@ const Building = ({ type, level, status, duration }) => {
         <div className="absolute bottom-0 right-0 bg-black/40 text-[8px] px-1 font-bold text-white rounded-tl">
             Lv.{level}
         </div>
+      )}
+
+      {hp !== undefined && maxHp !== undefined && (
+          <div className="absolute top-1 left-1 right-1 h-1 bg-black/40 rounded-full overflow-hidden border border-black/20">
+              <div
+                className="h-full bg-red-500 transition-all duration-300"
+                style={{ width: `${(hp / maxHp) * 100}%` }}
+              />
+          </div>
       )}
 
       {(status === 'upgrading' || status === 'constructing') && (

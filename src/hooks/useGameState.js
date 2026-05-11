@@ -93,11 +93,15 @@ const BUILDING_TYPES = {
 };
 
 export const useGameState = () => {
+  const [mode, setMode] = useState('HOME'); // 'HOME' or 'BATTLE'
   const [resources, setResources] = useState(INITIAL_RESOURCES);
   const [buildings, setBuildings] = useState([
     { type: 'TOWN_HALL', x: 4, y: 4, id: Date.now(), level: 1, status: 'ready' },
   ]);
+  const [aiBuildings, setAiBuildings] = useState([]);
   const [troops, setTroops] = useState({});
+  const [deployedUnits, setDeployedUnits] = useState([]);
+  const [battleResources, setBattleResources] = useState({ gold: 0, elixir: 0 });
 
   const totalTroops = useMemo(() => {
     return Object.values(troops).reduce((acc, count) => acc + count, 0);
@@ -113,6 +117,69 @@ export const useGameState = () => {
       return acc + (config.capacity || 0);
     }, 0);
   }, [buildings]);
+
+  const generateAIVillage = useCallback(() => {
+    const gold = Math.floor(Math.random() * 101) + 50;
+    const elixir = Math.floor(Math.random() * 101) + 50;
+    setBattleResources({ gold, elixir });
+
+    const layoutType = Math.random() > 0.5 ? 'SMART' : 'RANDOM';
+    const newAiBuildings = [];
+    const types = ['TOWN_HALL', 'GOLD_MINE', 'ELIXIR_COLLECTOR', 'BARRACKS', 'ARMY_CAMP', 'CANNON'];
+
+    if (layoutType === 'SMART') {
+      // TH in center, defense nearby, resources around
+      newAiBuildings.push({ type: 'TOWN_HALL', x: 4, y: 4, id: 1, level: 1, status: 'ready', hp: 1000 });
+      newAiBuildings.push({ type: 'CANNON', x: 4, y: 3, id: 2, level: 1, status: 'ready', hp: BUILDING_TYPES.CANNON.hp });
+      newAiBuildings.push({ type: 'GOLD_MINE', x: 3, y: 4, id: 3, level: 1, status: 'ready', hp: 300 });
+      newAiBuildings.push({ type: 'ELIXIR_COLLECTOR', x: 5, y: 4, id: 4, level: 1, status: 'ready', hp: 300 });
+      newAiBuildings.push({ type: 'BARRACKS', x: 3, y: 3, id: 5, level: 1, status: 'ready', hp: 400 });
+      newAiBuildings.push({ type: 'ARMY_CAMP', x: 5, y: 3, id: 6, level: 1, status: 'ready', hp: 400 });
+    } else {
+      // Random dispersion
+      const used = new Set();
+      types.forEach((type, i) => {
+        let rx, ry;
+        do {
+          rx = Math.floor(Math.random() * 8) + 1;
+          ry = Math.floor(Math.random() * 8) + 1;
+        } while (used.has(`${rx},${ry}`));
+        used.add(`${rx},${ry}`);
+        const hp = type === 'TOWN_HALL' ? 1000 : (BUILDING_TYPES[type].hp || 300);
+        newAiBuildings.push({ type, x: rx, y: ry, id: i + 1, level: 1, status: 'ready', hp });
+      });
+    }
+    setAiBuildings(newAiBuildings);
+  }, []);
+
+  const startBattle = useCallback(() => {
+    if (totalTroops === 0) return;
+    generateAIVillage();
+    setMode('BATTLE');
+    setDeployedUnits([]);
+  }, [totalTroops, generateAIVillage]);
+
+  const endBattle = useCallback(() => {
+    setMode('HOME');
+    setDeployedUnits([]);
+    setAiBuildings([]);
+    // Units used are lost (standard CoC mechanic)
+    setTroops({});
+  }, []);
+
+  const deployUnit = useCallback((type, x, y) => {
+    if (mode !== 'BATTLE' || troops[type] <= 0) return;
+
+    setTroops(prev => ({ ...prev, [type]: prev[type] - 1 }));
+    setDeployedUnits(prev => [...prev, {
+      type,
+      x,
+      y,
+      hp: TROOP_TYPES[type].hp || 50,
+      id: Date.now(),
+      targetId: null
+    }]);
+  }, [mode, troops]);
 
   const maxStorage = useMemo(() => {
     return buildings.reduce((acc, b) => {
@@ -246,18 +313,124 @@ export const useGameState = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [buildings, maxStorage]);
+  }, [buildings, maxStorage, mode]);
+
+  // Combat loop
+  useEffect(() => {
+    if (mode !== 'BATTLE') return;
+
+    const combatInterval = setInterval(() => {
+      // 1. Calculate damage to AI Buildings
+      setAiBuildings(prevBuildings => {
+          if (prevBuildings.length === 0) return prevBuildings;
+
+          const newBuildings = [...prevBuildings];
+          let goldLooted = 0;
+          let elixirLooted = 0;
+
+          deployedUnits.forEach(unit => {
+              let nearest = null;
+              let minDist = Infinity;
+
+              prevBuildings.forEach(b => {
+                const dist = Math.sqrt(Math.pow(b.x - unit.x, 2) + Math.pow(b.y - unit.y, 2));
+                if (dist < minDist) {
+                  minDist = dist;
+                  nearest = b;
+                }
+              });
+
+              if (nearest && minDist < 1.5) {
+                  const bIndex = newBuildings.findIndex(b => b.id === nearest.id);
+                  if (bIndex !== -1) {
+                      const damage = TROOP_TYPES[unit.type].damage || 10;
+                      newBuildings[bIndex] = { ...newBuildings[bIndex], hp: newBuildings[bIndex].hp - damage };
+
+                      if (newBuildings[bIndex].hp <= 0) {
+                          goldLooted += Math.floor(battleResources.gold / prevBuildings.length);
+                          elixirLooted += Math.floor(battleResources.elixir / prevBuildings.length);
+                          newBuildings.splice(bIndex, 1);
+                      }
+                  }
+              }
+          });
+
+          if (goldLooted > 0 || elixirLooted > 0) {
+              setResources(r => ({
+                  gold: Math.min(r.gold + goldLooted, maxStorage.gold),
+                  elixir: Math.min(r.elixir + elixirLooted, maxStorage.elixir)
+              }));
+          }
+
+          return newBuildings;
+      });
+
+      // 2. Move Units and take damage from Cannons
+      setDeployedUnits(prevUnits => {
+          if (prevUnits.length === 0) return prevUnits;
+
+          const cannons = aiBuildings.filter(b => b.type === 'CANNON');
+
+          return prevUnits.map(unit => {
+              // Handle movement
+              let nextPos = { x: unit.x, y: unit.y };
+              let nearestBuilding = null;
+              let minDist = Infinity;
+
+              aiBuildings.forEach(b => {
+                  const dist = Math.sqrt(Math.pow(b.x - unit.x, 2) + Math.pow(b.y - unit.y, 2));
+                  if (dist < minDist) {
+                      minDist = dist;
+                      nearestBuilding = b;
+                  }
+              });
+
+              if (nearestBuilding && minDist >= 1.5) {
+                  const dx = nearestBuilding.x - unit.x;
+                  const dy = nearestBuilding.y - unit.y;
+                  const mag = Math.sqrt(dx*dx + dy*dy);
+                  nextPos.x += (dx/mag) * 0.2;
+                  nextPos.y += (dy/mag) * 0.2;
+              }
+
+              // Take damage from nearest cannon
+              let newHp = unit.hp;
+              let nearestCannonDist = Infinity;
+              cannons.forEach(c => {
+                  const dist = Math.sqrt(Math.pow(c.x - unit.x, 2) + Math.pow(c.y - unit.y, 2));
+                  if (dist < nearestCannonDist) nearestCannonDist = dist;
+              });
+
+              if (nearestCannonDist < 4) {
+                  newHp -= 5;
+              }
+
+              return { ...unit, ...nextPos, hp: newHp };
+          }).filter(u => u.hp > 0);
+      });
+
+    }, 500);
+
+    return () => clearInterval(combatInterval);
+  }, [mode, aiBuildings, deployedUnits, battleResources, maxStorage]);
 
   return {
+    mode,
     resources,
     buildings,
+    aiBuildings,
     troops,
     totalTroops,
     troopCapacity,
     buildersUsed,
+    deployedUnits,
+    battleResources,
     addBuilding,
     trainTroop,
     upgradeBuilding,
+    startBattle,
+    endBattle,
+    deployUnit,
     BUILDING_TYPES,
     TROOP_TYPES,
   };

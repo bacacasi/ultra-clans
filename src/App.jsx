@@ -3,10 +3,10 @@ import Grid from './components/Grid';
 import Dashboard from './components/Dashboard';
 import Shop from './components/Shop';
 import { useGameState } from './hooks/useGameState';
-import { Shield, Users, ArrowBigUpDash, Coins, Droplet } from 'lucide-react';
+import { Shield, Users, ArrowBigUpDash, Coins, Droplet, Swords, Target } from 'lucide-react';
 
 function App() {
-  const { resources, buildings, troops, troopCapacity, addBuilding, trainTroop, upgradeBuilding, BUILDING_TYPES } = useGameState();
+  const { resources, buildings, troops, totalTroops, troopCapacity, addBuilding, trainTroop, upgradeBuilding, BUILDING_TYPES, TROOP_TYPES } = useGameState();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState(null);
 
@@ -33,13 +33,21 @@ function App() {
     setSelectedBuildingType(null);
   };
 
+  const getTroopIcon = (type) => {
+      switch(type) {
+          case 'BARBARIAN': return <Swords className="w-4 h-4 text-orange-400" />;
+          case 'ARCHER': return <Target className="w-4 h-4 text-pink-400" />;
+          default: return <Users className="w-4 h-4" />;
+      }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center p-8 gap-8 font-sans">
       <header className="flex flex-col items-center gap-4">
         <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic border-b-4 border-blue-600 pb-1">
           Clash Clone
         </h1>
-        <Dashboard resources={resources} troops={troops} troopCapacity={troopCapacity} />
+        <Dashboard resources={resources} totalTroops={totalTroops} troopCapacity={troopCapacity} troops={troops} />
       </header>
 
       <main className="flex gap-8 items-start">
@@ -68,21 +76,52 @@ function App() {
 
                     <div className="space-y-3">
                         {selectedBuilding.type === 'BARRACKS' && selectedBuilding.status === 'ready' && (
-                            <button
-                                onClick={trainTroop}
-                                disabled={troops >= troopCapacity || resources.elixir < 25}
-                                className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
-                            >
-                                <Users className="w-4 h-4" />
-                                Train Troop (25)
-                            </button>
+                            <div className="flex flex-col gap-2">
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Former des troupes</h3>
+                                {Object.entries(TROOP_TYPES).map(([type, config]) => {
+                                    const isLocked = selectedBuilding.level < config.requiredBarracksLevel;
+                                    const canAfford = resources.elixir >= config.cost;
+                                    const hasCapacity = totalTroops < troopCapacity;
+
+                                    return (
+                                        <button
+                                            key={type}
+                                            onClick={() => trainTroop(type)}
+                                            disabled={isLocked || !canAfford || !hasCapacity}
+                                            className={`w-full p-2 rounded-lg border flex flex-col gap-1 transition-all ${
+                                                isLocked
+                                                ? 'opacity-40 border-slate-700 bg-slate-900 cursor-not-allowed'
+                                                : 'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/20'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-2">
+                                                    {getTroopIcon(type)}
+                                                    <span className="text-sm font-bold text-white">{config.name}</span>
+                                                </div>
+                                                {isLocked && <Shield className="w-3 h-3 text-red-500" />}
+                                            </div>
+
+                                            {!isLocked && (
+                                                <div className="flex items-center gap-1 text-[10px] text-purple-400 font-bold">
+                                                    <Droplet className="w-2.5 h-2.5" />
+                                                    {config.cost}
+                                                </div>
+                                            )}
+                                            {isLocked && (
+                                                <span className="text-[8px] text-red-400 uppercase font-black">Niv.{config.requiredBarracksLevel} Requis</span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         )}
 
                         {selectedBuilding.status === 'ready' && selectedBuilding.level < 2 && BUILDING_TYPES[selectedBuilding.type].upgradeCost && (
                             <button
                                 onClick={() => upgradeBuilding(selectedBuilding.id)}
                                 disabled={resources.gold < BUILDING_TYPES[selectedBuilding.type].upgradeCost.gold || resources.elixir < BUILDING_TYPES[selectedBuilding.type].upgradeCost.elixir}
-                                className="w-full py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                                className="w-full py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors mt-2 border-t border-slate-700 pt-3"
                             >
                                 <ArrowBigUpDash className="w-4 h-4" />
                                 Améliorer
@@ -114,7 +153,7 @@ function App() {
                             </div>
                         )}
 
-                        {selectedBuilding.type === 'BARRACKS' && troops >= troopCapacity && troopCapacity > 0 && (
+                        {selectedBuilding.type === 'BARRACKS' && totalTroops >= troopCapacity && troopCapacity > 0 && (
                             <p className="text-[10px] text-orange-400 text-center font-bold">Army Camp Full!</p>
                         )}
                         {selectedBuilding.type === 'BARRACKS' && troopCapacity === 0 && (
@@ -128,7 +167,8 @@ function App() {
 
       <footer className="text-slate-500 text-sm mt-auto max-w-2xl text-center">
         Build mines and collectors for resources. <br/>
-        Click on buildings to see actions like <strong>Améliorer</strong> or <strong>Train Troop</strong>.
+        Click on buildings to see actions like <strong>Améliorer</strong> or <strong>Former des troupes</strong>. <br/>
+        Level up <strong>Barracks</strong> to unlock new troop types.
       </footer>
       <style>{`
         @keyframes progress {

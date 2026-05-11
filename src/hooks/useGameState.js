@@ -1,8 +1,23 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const INITIAL_RESOURCES = {
-  gold: 500,
-  elixir: 500,
+  gold: 1000,
+  elixir: 1000,
+};
+
+const TROOP_TYPES = {
+  BARBARIAN: {
+    id: 'BARBARIAN',
+    name: 'Barbarian',
+    cost: 25,
+    requiredBarracksLevel: 1,
+  },
+  ARCHER: {
+    id: 'ARCHER',
+    name: 'Archer',
+    cost: 50,
+    requiredBarracksLevel: 2,
+  }
 };
 
 const BUILDING_TYPES = {
@@ -17,7 +32,7 @@ const BUILDING_TYPES = {
     id: 'GOLD_MINE',
     name: 'Gold Mine',
     cost: { gold: 0, elixir: 150 },
-    production: [0, 3, 5], // index corresponds to level
+    production: [0, 3, 5],
     upgradeCost: { gold: 0, elixir: 300 },
     upgradeDuration: 5000,
     storage: { gold: 0, elixir: 0 },
@@ -38,6 +53,8 @@ const BUILDING_TYPES = {
     name: 'Barracks',
     cost: { gold: 0, elixir: 500 },
     production: { gold: 0, elixir: 0 },
+    upgradeCost: { gold: 500, elixir: 0 },
+    upgradeDuration: 5000,
     storage: { gold: 0, elixir: 0 },
     limit: 1,
   },
@@ -57,7 +74,11 @@ export const useGameState = () => {
   const [buildings, setBuildings] = useState([
     { type: 'TOWN_HALL', x: 4, y: 4, id: Date.now(), level: 1, status: 'ready' },
   ]);
-  const [troops, setTroops] = useState(0);
+  const [troops, setTroops] = useState({});
+
+  const totalTroops = useMemo(() => {
+    return Object.values(troops).reduce((acc, count) => acc + count, 0);
+  }, [troops]);
 
   const troopCapacity = useMemo(() => {
     return buildings.reduce((acc, b) => {
@@ -87,15 +108,23 @@ export const useGameState = () => {
     return false;
   }, [resources, buildings]);
 
-  const trainTroop = useCallback(() => {
-    const troopCost = 25;
-    if (resources.elixir >= troopCost && troops < troopCapacity) {
-      setResources(prev => ({ ...prev, elixir: prev.elixir - troopCost }));
-      setTroops(prev => prev + 1);
+  const trainTroop = useCallback((troopType) => {
+    const troopConfig = TROOP_TYPES[troopType];
+    if (!troopConfig) return false;
+
+    const barracks = buildings.find(b => b.type === 'BARRACKS' && b.status === 'ready');
+    if (!barracks || barracks.level < troopConfig.requiredBarracksLevel) return false;
+
+    if (resources.elixir >= troopConfig.cost && totalTroops < troopCapacity) {
+      setResources(prev => ({ ...prev, elixir: prev.elixir - troopConfig.cost }));
+      setTroops(prev => ({
+        ...prev,
+        [troopType]: (prev[troopType] || 0) + 1
+      }));
       return true;
     }
     return false;
-  }, [resources, troops, troopCapacity]);
+  }, [resources, totalTroops, troopCapacity, buildings]);
 
   const upgradeBuilding = useCallback((id) => {
     const building = buildings.find(b => b.id === id);
@@ -159,10 +188,12 @@ export const useGameState = () => {
     resources,
     buildings,
     troops,
+    totalTroops,
     troopCapacity,
     addBuilding,
     trainTroop,
     upgradeBuilding,
     BUILDING_TYPES,
+    TROOP_TYPES,
   };
 };

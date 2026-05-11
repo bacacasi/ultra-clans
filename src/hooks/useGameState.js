@@ -35,8 +35,8 @@ const BUILDING_TYPES = {
     hp: [0, 500, 800],
     production: { gold: 0, elixir: 0 },
     upgradeCost: { gold: 2000, elixir: 0 },
-    upgradeDuration: 10000,
-    storage: { gold: 5000, elixir: 5000 },
+    upgradeDuration: 60000,
+    storage: { gold: [0, 2000, 10000], elixir: [0, 2000, 10000] },
   },
   GOLD_MINE: {
     id: 'GOLD_MINE',
@@ -193,11 +193,20 @@ export const useGameState = () => {
 
   const maxStorage = useMemo(() => {
     return buildings.reduce((acc, b) => {
-      if (b.status !== 'ready') return acc;
+      // Allow upgrading buildings to provide storage so capacity doesn't drop to 0
+      if (b.status === 'constructing') return acc;
+
       const config = BUILDING_TYPES[b.type];
+      const goldStorage = Array.isArray(config.storage?.gold)
+        ? config.storage.gold[b.level]
+        : (config.storage?.gold || 0);
+      const elixirStorage = Array.isArray(config.storage?.elixir)
+        ? config.storage.elixir[b.level]
+        : (config.storage?.elixir || 0);
+
       return {
-        gold: acc.gold + (config.storage?.gold || 0),
-        elixir: acc.elixir + (config.storage?.elixir || 0),
+        gold: acc.gold + goldStorage,
+        elixir: acc.elixir + elixirStorage,
       };
     }, { gold: 0, elixir: 0 });
   }, [buildings]);

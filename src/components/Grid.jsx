@@ -40,7 +40,7 @@ const Grid = ({ buildings, deployedUnits, onCellClick, onBuildingClick, building
               status={building.status}
               duration={building.status === 'upgrading' ? buildingConfigs[building.type].upgradeDuration : buildingConfigs[building.type].constructionDuration}
               hp={mode === 'BATTLE' ? building.hp : undefined}
-              maxHp={mode === 'BATTLE' ? (building.type === 'TOWN_HALL' ? 1000 : (buildingConfigs[building.type].hp || 300)) : undefined}
+              maxHp={mode === 'BATTLE' ? (Array.isArray(buildingConfigs[building.type].hp) ? buildingConfigs[building.type].hp[building.level] : (buildingConfigs[building.type].hp || 300)) : undefined}
             />
         </div>
       ))}

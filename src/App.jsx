@@ -3,16 +3,17 @@ import Grid from './components/Grid';
 import Dashboard from './components/Dashboard';
 import Shop from './components/Shop';
 import { useGameState } from './hooks/useGameState';
-import { Shield, Users, ArrowBigUpDash, Coins, Droplet, Swords, Target, Heart, Zap } from 'lucide-react';
+import { Shield, Users, ArrowBigUpDash, Coins, Droplet, Swords, Target, Heart, Zap, Gem, ShoppingCart } from 'lucide-react';
 
 function App() {
   const {
     mode, resources, buildings, aiBuildings, troops, totalTroops, troopCapacity,
     buildersUsed, deployedUnits, battleResources, addBuilding, trainTroop,
-    upgradeBuilding, startBattle, endBattle, deployUnit, BUILDING_TYPES, TROOP_TYPES
+    upgradeBuilding, buyResourcesWithGems, startBattle, endBattle, deployUnit, BUILDING_TYPES, TROOP_TYPES
   } = useGameState();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState(null);
+  const [showGemStore, setShowGemStore] = useState(false);
 
   const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
 
@@ -127,7 +128,9 @@ function App() {
                             {BUILDING_TYPES[selectedBuilding.type].hp && (
                                 <div className="flex items-center gap-2">
                                     <Heart className="w-3 h-3 text-red-500" />
-                                    <span>HP: {BUILDING_TYPES[selectedBuilding.type].hp}</span>
+                                    <span>HP: {Array.isArray(BUILDING_TYPES[selectedBuilding.type].hp)
+                                        ? BUILDING_TYPES[selectedBuilding.type].hp[selectedBuilding.level]
+                                        : BUILDING_TYPES[selectedBuilding.type].hp}</span>
                                 </div>
                             )}
                             {BUILDING_TYPES[selectedBuilding.type].damage && (
@@ -272,14 +275,97 @@ function App() {
       </main>
 
       {mode === 'HOME' && (
+        <div className="fixed bottom-8 right-8 flex flex-col gap-4 items-end">
+          <button
+              onClick={() => setShowGemStore(!showGemStore)}
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xl rounded-xl shadow-xl border-b-4 border-emerald-800 flex items-center gap-2 transition-transform hover:scale-105 active:scale-95 uppercase italic"
+          >
+              <ShoppingCart className="w-6 h-6" />
+              Magasin
+          </button>
           <button
               onClick={startBattle}
               disabled={totalTroops === 0}
-              className="fixed bottom-8 right-8 px-8 py-4 bg-orange-600 hover:bg-orange-500 disabled:bg-slate-700 disabled:opacity-50 text-white font-black text-2xl rounded-2xl shadow-2xl border-b-4 border-orange-800 flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 uppercase italic"
+              className="px-8 py-4 bg-orange-600 hover:bg-orange-500 disabled:bg-slate-700 disabled:opacity-50 text-white font-black text-2xl rounded-2xl shadow-2xl border-b-4 border-orange-800 flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 uppercase italic"
           >
               <Swords className="w-8 h-8" />
               Attaquer
           </button>
+        </div>
+      )}
+
+      {showGemStore && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+              <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                  <div className="p-4 bg-emerald-600 flex justify-between items-center">
+                      <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-2">
+                          <ShoppingCart className="w-6 h-6" />
+                          Magasin de Gemmes
+                      </h2>
+                      <button
+                          onClick={() => setShowGemStore(false)}
+                          className="text-white hover:rotate-90 transition-transform"
+                      >
+                          <Zap className="w-6 h-6 fill-current" />
+                      </button>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-700">
+                          <div className="flex items-center gap-3">
+                              <div className="p-2 bg-yellow-500/20 rounded-lg border border-yellow-500/50">
+                                  <Coins className="w-8 h-8 text-yellow-400" />
+                              </div>
+                              <div>
+                                  <div className="text-white font-bold text-lg">2,000 Or</div>
+                                  <div className="text-slate-400 text-xs font-bold uppercase">Ressources</div>
+                              </div>
+                          </div>
+                          <button
+                              onClick={() => buyResourcesWithGems('gold')}
+                              disabled={resources.gems < 200}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:grayscale text-white font-black rounded-lg flex items-center gap-2 shadow-lg transition-all active:scale-95"
+                          >
+                              <Gem className="w-4 h-4" />
+                              200
+                          </button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-700">
+                          <div className="flex items-center gap-3">
+                              <div className="p-2 bg-purple-500/20 rounded-lg border border-purple-500/50">
+                                  <Droplet className="w-8 h-8 text-purple-400" />
+                              </div>
+                              <div>
+                                  <div className="text-white font-bold text-lg">2,000 Élixir</div>
+                                  <div className="text-slate-400 text-xs font-bold uppercase">Ressources</div>
+                              </div>
+                          </div>
+                          <button
+                              onClick={() => buyResourcesWithGems('elixir')}
+                              disabled={resources.gems < 200}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:grayscale text-white font-black rounded-lg flex items-center gap-2 shadow-lg transition-all active:scale-95"
+                          >
+                              <Gem className="w-4 h-4" />
+                              200
+                          </button>
+                      </div>
+
+                      <p className="text-center text-slate-500 text-[10px] font-bold uppercase tracking-widest pt-2">
+                          Solde actuel: <span className="text-emerald-400">{resources.gems} Gemmes</span>
+                      </p>
+                  </div>
+
+                  <div className="p-4 bg-slate-900/50 border-t border-slate-700">
+                      <button
+                          onClick={() => setShowGemStore(false)}
+                          className="w-full py-2 text-slate-400 hover:text-white font-bold uppercase tracking-tighter transition-colors"
+                      >
+                          Fermer
+                      </button>
+                  </div>
+              </div>
+          </div>
       )}
 
       <footer className="text-slate-500 text-sm mt-auto max-w-2xl text-center">

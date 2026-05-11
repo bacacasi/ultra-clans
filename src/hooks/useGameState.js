@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 const INITIAL_RESOURCES = {
   gold: 500,
   elixir: 500,
+  gems: 250,
 };
 
 const TROOP_TYPES = {
@@ -12,12 +13,16 @@ const TROOP_TYPES = {
     cost: 15,
     hp: 50,
     damage: 30,
+    range: 1.5,
     requiredBarracksLevel: 1,
   },
   ARCHER: {
     id: 'ARCHER',
     name: 'Archer',
     cost: 50,
+    hp: 40,
+    damage: 20,
+    range: 4.0,
     requiredBarracksLevel: 2,
   }
 };
@@ -27,6 +32,7 @@ const BUILDING_TYPES = {
     id: 'TOWN_HALL',
     name: 'Town Hall',
     cost: { gold: 0, elixir: 0 },
+    hp: [0, 500, 800],
     production: { gold: 0, elixir: 0 },
     upgradeCost: { gold: 2000, elixir: 0 },
     upgradeDuration: 10000,
@@ -37,6 +43,7 @@ const BUILDING_TYPES = {
     name: 'Gold Mine',
     category: 'RESOURCES',
     cost: { gold: 0, elixir: 150 },
+    hp: [0, 100, 300],
     production: [0, 3, 5],
     upgradeCost: { gold: 0, elixir: 300 },
     upgradeDuration: 5000,
@@ -49,6 +56,7 @@ const BUILDING_TYPES = {
     name: 'Elixir Collector',
     category: 'RESOURCES',
     cost: { gold: 150, elixir: 0 },
+    hp: [0, 100, 300],
     production: [0, 3, 5],
     upgradeCost: { gold: 300, elixir: 0 },
     upgradeDuration: 5000,
@@ -61,6 +69,7 @@ const BUILDING_TYPES = {
     name: 'Barracks',
     category: 'ARMY',
     cost: { gold: 0, elixir: 500 },
+    hp: 300,
     production: { gold: 0, elixir: 0 },
     upgradeCost: { gold: 500, elixir: 0 },
     upgradeDuration: 5000,
@@ -129,12 +138,12 @@ export const useGameState = () => {
 
     if (layoutType === 'SMART') {
       // TH in center, defense nearby, resources around
-      newAiBuildings.push({ type: 'TOWN_HALL', x: 4, y: 4, id: 1, level: 1, status: 'ready', hp: 1000 });
+      newAiBuildings.push({ type: 'TOWN_HALL', x: 4, y: 4, id: 1, level: 1, status: 'ready', hp: BUILDING_TYPES.TOWN_HALL.hp[1] });
       newAiBuildings.push({ type: 'CANNON', x: 4, y: 3, id: 2, level: 1, status: 'ready', hp: BUILDING_TYPES.CANNON.hp });
-      newAiBuildings.push({ type: 'GOLD_MINE', x: 3, y: 4, id: 3, level: 1, status: 'ready', hp: 300 });
-      newAiBuildings.push({ type: 'ELIXIR_COLLECTOR', x: 5, y: 4, id: 4, level: 1, status: 'ready', hp: 300 });
-      newAiBuildings.push({ type: 'BARRACKS', x: 3, y: 3, id: 5, level: 1, status: 'ready', hp: 400 });
-      newAiBuildings.push({ type: 'ARMY_CAMP', x: 5, y: 3, id: 6, level: 1, status: 'ready', hp: 400 });
+      newAiBuildings.push({ type: 'GOLD_MINE', x: 3, y: 4, id: 3, level: 1, status: 'ready', hp: BUILDING_TYPES.GOLD_MINE.hp[1] });
+      newAiBuildings.push({ type: 'ELIXIR_COLLECTOR', x: 5, y: 4, id: 4, level: 1, status: 'ready', hp: BUILDING_TYPES.ELIXIR_COLLECTOR.hp[1] });
+      newAiBuildings.push({ type: 'BARRACKS', x: 3, y: 3, id: 5, level: 1, status: 'ready', hp: BUILDING_TYPES.BARRACKS.hp });
+      newAiBuildings.push({ type: 'ARMY_CAMP', x: 5, y: 3, id: 6, level: 1, status: 'ready', hp: 300 });
     } else {
       // Random dispersion
       const used = new Set();
@@ -145,7 +154,8 @@ export const useGameState = () => {
           ry = Math.floor(Math.random() * 8) + 1;
         } while (used.has(`${rx},${ry}`));
         used.add(`${rx},${ry}`);
-        const hp = type === 'TOWN_HALL' ? 1000 : (BUILDING_TYPES[type].hp || 300);
+        const config = BUILDING_TYPES[type];
+        const hp = Array.isArray(config.hp) ? config.hp[1] : (config.hp || 300);
         newAiBuildings.push({ type, x: rx, y: ry, id: i + 1, level: 1, status: 'ready', hp });
       });
     }
@@ -168,7 +178,7 @@ export const useGameState = () => {
   }, []);
 
   const deployUnit = useCallback((type, x, y) => {
-    if (mode !== 'BATTLE' || troops[type] <= 0) return;
+    if (mode !== 'BATTLE' || !(troops[type] > 0)) return;
 
     setTroops(prev => ({ ...prev, [type]: prev[type] - 1 }));
     setDeployedUnits(prev => [...prev, {
@@ -282,6 +292,31 @@ export const useGameState = () => {
     return false;
   }, [buildings, resources]);
 
+  const buyResourcesWithGems = useCallback((type) => {
+    if (resources.gems < 200) return false;
+
+    setResources(prev => {
+      const newGems = prev.gems - 200;
+      const amountToAdd = 2000;
+
+      if (type === 'gold') {
+        return {
+          ...prev,
+          gems: newGems,
+          gold: Math.min(prev.gold + amountToAdd, maxStorage.gold)
+        };
+      } else if (type === 'elixir') {
+        return {
+          ...prev,
+          gems: newGems,
+          elixir: Math.min(prev.elixir + amountToAdd, maxStorage.elixir)
+        };
+      }
+      return prev;
+    });
+    return true;
+  }, [resources.gems, maxStorage]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setResources(prev => {
@@ -340,7 +375,7 @@ export const useGameState = () => {
                 }
               });
 
-              if (nearest && minDist < 1.5) {
+              if (nearest && minDist < TROOP_TYPES[unit.type].range) {
                   const bIndex = newBuildings.findIndex(b => b.id === nearest.id);
                   if (bIndex !== -1) {
                       const damage = TROOP_TYPES[unit.type].damage || 10;
@@ -385,7 +420,7 @@ export const useGameState = () => {
                   }
               });
 
-              if (nearestBuilding && minDist >= 1.5) {
+              if (nearestBuilding && minDist >= TROOP_TYPES[unit.type].range) {
                   const dx = nearestBuilding.x - unit.x;
                   const dy = nearestBuilding.y - unit.y;
                   const mag = Math.sqrt(dx*dx + dy*dy);
@@ -428,6 +463,7 @@ export const useGameState = () => {
     addBuilding,
     trainTroop,
     upgradeBuilding,
+    buyResourcesWithGems,
     startBattle,
     endBattle,
     deployUnit,

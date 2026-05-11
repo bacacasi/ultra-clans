@@ -1,5 +1,5 @@
 import React from 'react';
-import { Coins, Droplet, Users, Hammer } from 'lucide-react';
+import { Coins, Droplet, Users, Hammer, Gem } from 'lucide-react';
 
 const Dashboard = ({ resources, totalTroops, troopCapacity, troops, buildersUsed }) => {
   return (
@@ -12,6 +12,10 @@ const Dashboard = ({ resources, totalTroops, troopCapacity, troops, buildersUsed
             <div className="flex items-center gap-2 px-4 py-1 bg-purple-600/20 rounded-full border border-purple-500/50">
                 <Droplet className="w-5 h-5 text-purple-400" />
                 <span className="font-bold text-purple-50 text-lg">{resources.elixir}</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-1 bg-emerald-600/20 rounded-full border border-emerald-500/50">
+                <Gem className="w-5 h-5 text-emerald-400" />
+                <span className="font-bold text-emerald-50 text-lg">{resources.gems}</span>
             </div>
             <div className="flex items-center gap-2 px-4 py-1 bg-blue-600/20 rounded-full border border-blue-500/50">
                 <Users className="w-5 h-5 text-blue-400" />

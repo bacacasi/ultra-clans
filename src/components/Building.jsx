@@ -1,9 +1,9 @@
 import React from 'react';
-import { Home, Pickaxe, Droplets, Shield, Tent, Hammer } from 'lucide-react';
+import { Home, Pickaxe, Droplets, Shield, Tent, Hammer, Crosshair } from 'lucide-react';
 
 const Building = ({ type, level, status }) => {
   const getIcon = () => {
-    if (status === 'upgrading') {
+    if (status === 'upgrading' || status === 'constructing') {
         return <Hammer className="w-8 h-8 text-white animate-bounce" />;
     }
 
@@ -18,13 +18,15 @@ const Building = ({ type, level, status }) => {
         return <Shield className="w-8 h-8 text-blue-400" />;
       case 'ARMY_CAMP':
         return <Tent className="w-8 h-8 text-orange-400" />;
+      case 'CANNON':
+        return <Crosshair className="w-8 h-8 text-slate-100" />;
       default:
         return null;
     }
   };
 
   const getBgColor = () => {
-    if (status === 'upgrading') return 'bg-slate-500';
+    if (status === 'upgrading' || status === 'constructing') return 'bg-slate-500';
 
     switch (type) {
       case 'TOWN_HALL':
@@ -37,6 +39,8 @@ const Building = ({ type, level, status }) => {
         return 'bg-slate-700';
       case 'ARMY_CAMP':
         return 'bg-amber-900';
+      case 'CANNON':
+        return 'bg-slate-800';
       default:
         return 'bg-blue-500';
     }
@@ -54,9 +58,14 @@ const Building = ({ type, level, status }) => {
         </div>
       )}
 
-      {status === 'upgrading' && (
+      {(status === 'upgrading' || status === 'constructing') && (
         <div className="absolute inset-0 bg-black/20 flex items-end">
-            <div className="h-1 bg-green-500 animate-[progress_5s_linear] w-full" />
+            <div
+                className="h-1 bg-green-500 w-full"
+                style={{
+                    animation: status === 'upgrading' ? 'progress 5s linear' : 'progress 30s linear'
+                }}
+            />
         </div>
       )}
     </div>

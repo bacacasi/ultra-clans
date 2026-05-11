@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pickaxe, Droplets, Coins, Droplet, Shield, Tent } from 'lucide-react';
+import { Pickaxe, Droplets, Coins, Droplet, Shield, Tent, Crosshair } from 'lucide-react';
 
 const Shop = ({ buildingTypes, onSelect, selectedType, buildings }) => {
   const getIcon = (key) => {
@@ -8,6 +8,7 @@ const Shop = ({ buildingTypes, onSelect, selectedType, buildings }) => {
         case 'ELIXIR_COLLECTOR': return <Droplets className="w-6 h-6 text-purple-400" />;
         case 'BARRACKS': return <Shield className="w-6 h-6 text-blue-400" />;
         case 'ARMY_CAMP': return <Tent className="w-6 h-6 text-orange-400" />;
+        case 'CANNON': return <Crosshair className="w-6 h-6 text-slate-100" />;
         default: return null;
     }
   };

@@ -9,7 +9,9 @@ const TROOP_TYPES = {
   BARBARIAN: {
     id: 'BARBARIAN',
     name: 'Barbarian',
-    cost: 25,
+    cost: 15,
+    hp: 50,
+    damage: 30,
     requiredBarracksLevel: 1,
   },
   ARCHER: {
@@ -67,6 +69,15 @@ const BUILDING_TYPES = {
     capacity: 20,
     limit: 1,
   },
+  CANNON: {
+    id: 'CANNON',
+    name: 'Cannon',
+    cost: { gold: 500, elixir: 0 },
+    hp: 150,
+    damage: 20,
+    constructionDuration: 30000,
+    limit: 1,
+  }
 };
 
 export const useGameState = () => {
@@ -102,7 +113,20 @@ export const useGameState = () => {
         gold: prev.gold - buildingConfig.cost.gold,
         elixir: prev.elixir - buildingConfig.cost.elixir,
       }));
-      setBuildings(prev => [...prev, { type, x, y, id: Date.now(), level: 1, status: 'ready' }]);
+
+      const newBuildingId = Date.now();
+      const initialStatus = buildingConfig.constructionDuration ? 'constructing' : 'ready';
+
+      setBuildings(prev => [...prev, { type, x, y, id: newBuildingId, level: 1, status: initialStatus }]);
+
+      if (buildingConfig.constructionDuration) {
+          setTimeout(() => {
+              setBuildings(prev => prev.map(b =>
+                b.id === newBuildingId ? { ...b, status: 'ready' } : b
+              ));
+          }, buildingConfig.constructionDuration);
+      }
+
       return true;
     }
     return false;
@@ -128,7 +152,7 @@ export const useGameState = () => {
 
   const upgradeBuilding = useCallback((id) => {
     const building = buildings.find(b => b.id === id);
-    if (!building || building.status === 'upgrading' || building.level >= 2) return false;
+    if (!building || building.status === 'upgrading' || building.status === 'constructing' || building.level >= 2) return false;
 
     const config = BUILDING_TYPES[building.type];
     if (!config || !config.upgradeCost) return false;
@@ -168,7 +192,7 @@ export const useGameState = () => {
             const prod = config.production[b.level];
             if (b.type === 'GOLD_MINE') goldGain += prod;
             if (b.type === 'ELIXIR_COLLECTOR') elixirGain += prod;
-          } else {
+          } else if (config.production) {
             goldGain += config.production.gold || 0;
             elixirGain += config.production.elixir || 0;
           }

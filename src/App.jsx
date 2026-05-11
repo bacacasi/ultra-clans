@@ -55,6 +55,7 @@ function App() {
           buildings={buildings}
           onCellClick={handleCellClick}
           onBuildingClick={handleBuildingClick}
+          buildingConfigs={BUILDING_TYPES}
         />
         <div className="flex flex-col gap-4">
             <Shop
@@ -144,15 +145,22 @@ function App() {
                             </div>
                         )}
 
-                        {selectedBuilding.status === 'ready' && selectedBuilding.level < 2 && BUILDING_TYPES[selectedBuilding.type].upgradeCost && (
-                            <button
-                                onClick={() => upgradeBuilding(selectedBuilding.id)}
-                                disabled={resources.gold < BUILDING_TYPES[selectedBuilding.type].upgradeCost.gold || resources.elixir < BUILDING_TYPES[selectedBuilding.type].upgradeCost.elixir}
-                                className="w-full py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors mt-2 border-t border-slate-700 pt-3"
-                            >
-                                <ArrowBigUpDash className="w-4 h-4" />
-                                Améliorer
-                                <div className="flex gap-2 text-[10px] ml-1">
+                        {selectedBuilding.status === 'ready' && selectedBuilding.level < 2 && BUILDING_TYPES[selectedBuilding.type].upgradeCost && (() => {
+                            const config = BUILDING_TYPES[selectedBuilding.type];
+                            const townHall = buildings.find(b => b.type === 'TOWN_HALL');
+                            const isLockedByTH = config.requiredTownHallLevel && (!townHall || townHall.level < config.requiredTownHallLevel);
+                            const canAfford = resources.gold >= config.upgradeCost.gold && resources.elixir >= config.upgradeCost.elixir;
+
+                            return (
+                            <div className="flex flex-col gap-1">
+                                <button
+                                    onClick={() => upgradeBuilding(selectedBuilding.id)}
+                                    disabled={isLockedByTH || !canAfford}
+                                    className="w-full py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors mt-2 border-t border-slate-700 pt-3"
+                                >
+                                    <ArrowBigUpDash className="w-4 h-4" />
+                                    Améliorer
+                                    <div className="flex gap-2 text-[10px] ml-1">
                                     {BUILDING_TYPES[selectedBuilding.type].upgradeCost.gold > 0 && (
                                         <div className="flex items-center gap-0.5 text-yellow-300">
                                             <Coins className="w-3 h-3" />
@@ -165,16 +173,26 @@ function App() {
                                             {BUILDING_TYPES[selectedBuilding.type].upgradeCost.elixir}
                                         </div>
                                     )}
-                                </div>
-                            </button>
-                        )}
+                                    </div>
+                                </button>
+                                {isLockedByTH && (
+                                    <p className="text-[10px] text-red-400 text-center font-bold">HDV {config.requiredTownHallLevel} Requis</p>
+                                )}
+                            </div>
+                            );
+                        })()}
 
                         {selectedBuilding.status === 'upgrading' && (
                             <div className="w-full py-2 bg-slate-700 text-slate-300 font-bold rounded-lg flex flex-col items-center justify-center gap-1">
                                 <div className="text-xs uppercase tracking-widest animate-pulse">Amélioration en cours...</div>
                                 <div className="w-full px-4">
                                     <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-green-500 animate-[progress_5s_linear]" />
+                                        <div
+                                            className="h-full bg-green-500"
+                                            style={{
+                                                animation: `progress ${BUILDING_TYPES[selectedBuilding.type].upgradeDuration / 1000}s linear`
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Home, Pickaxe, Droplets, Shield, Tent, Hammer, Crosshair } from 'lucide-react';
 
-const Building = ({ type, level, status }) => {
+const Building = ({ type, level, status, duration }) => {
   const getIcon = () => {
     if (status === 'upgrading' || status === 'constructing') {
         return <Hammer className="w-8 h-8 text-white animate-bounce" />;
@@ -63,7 +63,7 @@ const Building = ({ type, level, status }) => {
             <div
                 className="h-1 bg-green-500 w-full"
                 style={{
-                    animation: status === 'upgrading' ? 'progress 5s linear' : 'progress 30s linear'
+                    animation: `progress ${duration / 1000}s linear`
                 }}
             />
         </div>

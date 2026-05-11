@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const INITIAL_RESOURCES = {
-  gold: 1000,
-  elixir: 1000,
+  gold: 500,
+  elixir: 500,
 };
 
 const TROOP_TYPES = {
@@ -28,7 +28,9 @@ const BUILDING_TYPES = {
     name: 'Town Hall',
     cost: { gold: 0, elixir: 0 },
     production: { gold: 0, elixir: 0 },
-    storage: { gold: 1000, elixir: 1000 },
+    upgradeCost: { gold: 2000, elixir: 0 },
+    upgradeDuration: 10000,
+    storage: { gold: 5000, elixir: 5000 },
   },
   GOLD_MINE: {
     id: 'GOLD_MINE',
@@ -57,6 +59,7 @@ const BUILDING_TYPES = {
     production: { gold: 0, elixir: 0 },
     upgradeCost: { gold: 500, elixir: 0 },
     upgradeDuration: 5000,
+    requiredTownHallLevel: 2,
     storage: { gold: 0, elixir: 0 },
     limit: 1,
   },
@@ -96,6 +99,17 @@ export const useGameState = () => {
       const config = BUILDING_TYPES[b.type];
       return acc + (config.capacity || 0);
     }, 0);
+  }, [buildings]);
+
+  const maxStorage = useMemo(() => {
+    return buildings.reduce((acc, b) => {
+      if (b.status !== 'ready') return acc;
+      const config = BUILDING_TYPES[b.type];
+      return {
+        gold: acc.gold + (config.storage?.gold || 0),
+        elixir: acc.elixir + (config.storage?.elixir || 0),
+      };
+    }, { gold: 0, elixir: 0 });
   }, [buildings]);
 
   const addBuilding = useCallback((type, x, y) => {
@@ -157,6 +171,12 @@ export const useGameState = () => {
     const config = BUILDING_TYPES[building.type];
     if (!config || !config.upgradeCost) return false;
 
+    // Check Town Hall level requirement
+    if (config.requiredTownHallLevel) {
+      const townHall = buildings.find(b => b.type === 'TOWN_HALL');
+      if (!townHall || townHall.level < config.requiredTownHallLevel) return false;
+    }
+
     if (resources.gold >= config.upgradeCost.gold && resources.elixir >= config.upgradeCost.elixir) {
       setResources(prev => ({
         gold: prev.gold - config.upgradeCost.gold,
@@ -198,15 +218,18 @@ export const useGameState = () => {
           }
         });
 
+        const newGold = prev.gold + goldGain;
+        const newElixir = prev.elixir + elixirGain;
+
         return {
-          gold: prev.gold + goldGain,
-          elixir: prev.elixir + elixirGain,
+          gold: Math.min(newGold, maxStorage.gold),
+          elixir: Math.min(newElixir, maxStorage.elixir),
         };
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [buildings]);
+  }, [buildings, maxStorage]);
 
   return {
     resources,

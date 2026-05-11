@@ -1,7 +1,7 @@
 import React from 'react';
 import Building from './Building';
 
-const Grid = ({ buildings, onCellClick, onBuildingClick }) => {
+const Grid = ({ buildings, onCellClick, onBuildingClick, buildingConfigs }) => {
   const gridSize = 10;
   const cells = [];
 
@@ -33,7 +33,12 @@ const Grid = ({ buildings, onCellClick, onBuildingClick }) => {
                 onBuildingClick(building);
             }}
         >
-            <Building type={building.type} level={building.level} status={building.status} />
+            <Building
+              type={building.type}
+              level={building.level}
+              status={building.status}
+              duration={building.status === 'upgrading' ? buildingConfigs[building.type].upgradeDuration : buildingConfigs[building.type].constructionDuration}
+            />
         </div>
       ))}
     </div>

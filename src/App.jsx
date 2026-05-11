@@ -6,7 +6,7 @@ import { useGameState } from './hooks/useGameState';
 import { Shield, Users, ArrowBigUpDash, Coins, Droplet, Swords, Target, Heart, Zap } from 'lucide-react';
 
 function App() {
-  const { resources, buildings, troops, totalTroops, troopCapacity, addBuilding, trainTroop, upgradeBuilding, BUILDING_TYPES, TROOP_TYPES } = useGameState();
+  const { resources, buildings, troops, totalTroops, troopCapacity, buildersUsed, addBuilding, trainTroop, upgradeBuilding, BUILDING_TYPES, TROOP_TYPES } = useGameState();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState(null);
 
@@ -47,7 +47,13 @@ function App() {
         <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic border-b-4 border-blue-600 pb-1">
           Clash Clone
         </h1>
-        <Dashboard resources={resources} totalTroops={totalTroops} troopCapacity={troopCapacity} troops={troops} />
+        <Dashboard
+          resources={resources}
+          totalTroops={totalTroops}
+          troopCapacity={troopCapacity}
+          troops={troops}
+          buildersUsed={buildersUsed}
+        />
       </header>
 
       <main className="flex gap-8 items-start">

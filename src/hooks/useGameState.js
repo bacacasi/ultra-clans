@@ -35,30 +35,36 @@ const BUILDING_TYPES = {
   GOLD_MINE: {
     id: 'GOLD_MINE',
     name: 'Gold Mine',
+    category: 'RESOURCES',
     cost: { gold: 0, elixir: 150 },
     production: [0, 3, 5],
     upgradeCost: { gold: 0, elixir: 300 },
     upgradeDuration: 5000,
+    constructionDuration: 5000,
     storage: { gold: 0, elixir: 0 },
     limit: 1,
   },
   ELIXIR_COLLECTOR: {
     id: 'ELIXIR_COLLECTOR',
     name: 'Elixir Collector',
+    category: 'RESOURCES',
     cost: { gold: 150, elixir: 0 },
     production: [0, 3, 5],
     upgradeCost: { gold: 300, elixir: 0 },
     upgradeDuration: 5000,
+    constructionDuration: 5000,
     storage: { gold: 0, elixir: 0 },
     limit: 1,
   },
   BARRACKS: {
     id: 'BARRACKS',
     name: 'Barracks',
+    category: 'ARMY',
     cost: { gold: 0, elixir: 500 },
     production: { gold: 0, elixir: 0 },
     upgradeCost: { gold: 500, elixir: 0 },
     upgradeDuration: 5000,
+    constructionDuration: 10000,
     requiredTownHallLevel: 2,
     storage: { gold: 0, elixir: 0 },
     limit: 1,
@@ -66,15 +72,18 @@ const BUILDING_TYPES = {
   ARMY_CAMP: {
     id: 'ARMY_CAMP',
     name: 'Army Camp',
+    category: 'ARMY',
     cost: { gold: 0, elixir: 300 },
     production: { gold: 0, elixir: 0 },
     storage: { gold: 0, elixir: 0 },
     capacity: 20,
+    constructionDuration: 10000,
     limit: 1,
   },
   CANNON: {
     id: 'CANNON',
     name: 'Cannon',
+    category: 'DEFENSE',
     cost: { gold: 500, elixir: 0 },
     hp: 150,
     damage: 20,
@@ -93,6 +102,10 @@ export const useGameState = () => {
   const totalTroops = useMemo(() => {
     return Object.values(troops).reduce((acc, count) => acc + count, 0);
   }, [troops]);
+
+  const buildersUsed = useMemo(() => {
+    return buildings.filter(b => b.status === 'constructing' || b.status === 'upgrading').length;
+  }, [buildings]);
 
   const troopCapacity = useMemo(() => {
     return buildings.reduce((acc, b) => {
@@ -121,6 +134,8 @@ export const useGameState = () => {
       const existingCount = buildings.filter(b => b.type === type).length;
       if (existingCount >= buildingConfig.limit) return false;
     }
+
+    if (buildersUsed >= 2) return false;
 
     if (resources.gold >= buildingConfig.cost.gold && resources.elixir >= buildingConfig.cost.elixir) {
       setResources(prev => ({
@@ -167,6 +182,8 @@ export const useGameState = () => {
   const upgradeBuilding = useCallback((id) => {
     const building = buildings.find(b => b.id === id);
     if (!building || building.status === 'upgrading' || building.status === 'constructing' || building.level >= 2) return false;
+
+    if (buildersUsed >= 2) return false;
 
     const config = BUILDING_TYPES[building.type];
     if (!config || !config.upgradeCost) return false;
@@ -237,6 +254,7 @@ export const useGameState = () => {
     troops,
     totalTroops,
     troopCapacity,
+    buildersUsed,
     addBuilding,
     trainTroop,
     upgradeBuilding,

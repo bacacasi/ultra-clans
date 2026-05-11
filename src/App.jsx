@@ -311,7 +311,15 @@ function App() {
                   </div>
 
                   <div className="p-6 space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-700">
+                      <div className="bg-slate-900/80 rounded-xl p-3 border border-emerald-500/30 flex items-center justify-between mb-4 shadow-inner">
+                          <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">Votre Solde</span>
+                          <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/50">
+                              <Gem className="w-4 h-4 text-emerald-400" />
+                              <span className="text-emerald-50 font-black text-lg">{resources.gems}</span>
+                          </div>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-700 transition-all hover:bg-slate-900/80">
                           <div className="flex items-center gap-3">
                               <div className="p-2 bg-yellow-500/20 rounded-lg border border-yellow-500/50">
                                   <Coins className="w-8 h-8 text-yellow-400" />
@@ -351,9 +359,6 @@ function App() {
                           </button>
                       </div>
 
-                      <p className="text-center text-slate-500 text-[10px] font-bold uppercase tracking-widest pt-2">
-                          Solde actuel: <span className="text-emerald-400">{resources.gems} Gemmes</span>
-                      </p>
                   </div>
 
                   <div className="p-4 bg-slate-900/50 border-t border-slate-700">
